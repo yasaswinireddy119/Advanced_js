@@ -17,3 +17,21 @@ const data = [
 ]
 
 console.log(countcategories(data))
+
+
+//extra challange
+
+function countandsortcategories(categories){
+    const counts = categories.reduce((acc , items) => {
+        acc[items] = (acc[items] || 0) +1;
+        return acc
+    } , {})
+
+    const entries = Object.entries(counts)
+    entries.sort((a,b) =>b[1]-a[1])
+    return entries.map(entry => entry[0])
+}
+
+
+console.log(countandsortcategories(data))
+//it gives the order of highest to the lowest
