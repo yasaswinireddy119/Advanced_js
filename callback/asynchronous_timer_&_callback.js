@@ -10,3 +10,5 @@ function timer(duration , onComplete){
 timer(2000,(message)=>{
     console.log(message)
 });
+
+document.que

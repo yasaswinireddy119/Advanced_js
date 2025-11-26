@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <h1 id="text">Hello</h1>
+    <p>DOM Means Document Object Model.The whole html code is first read and it  was converted into heirarchical tree like structure that structure is called DOM.
+    </p>
+    <div class="container">
+        <p>This is a division by DOM</p>
+    </div>
+    
+
+    
+</body>
+<script>
+
+    const heading = document.getElementById("text");
+    heading.textContent="Welcome to the DOM World!";
+
+
+    const paragraph=document.getElementsByTagName("p");
+    for(let i = 0; i<paragraph.length;i++){
+        paragraph[i].style.color="blue";
+    }
+
+    const con = document.querySelector(".container");
+    con.style.backgroundColor="yellow";
+  
+    
+
+</script>
+</html>
