@@ -1,0 +1,26 @@
+body{
+    font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+}
+div {
+    
+    grid-template-rows: 1fr 1fr 1fr;
+    font-size: 12px;
+}
+#mainBox{
+    display: grid;
+    margin: 10%;
+   
+    padding:20px;
+
+}
+.innerBox{
+    width: 260px;
+    background-color: pink;
+    overflow: hidden;
+     border: 1px solid black;
+     text-align: center;
+     padding: 20px;
+  
+
+
+}
