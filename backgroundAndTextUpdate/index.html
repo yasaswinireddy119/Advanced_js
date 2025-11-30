@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=input, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <h2>Backgroundcolor and text update</h2>
+    <input  id="color"  type="text" placeholder="Enter your color">
+    <button id="changeColor">Change BackgroundColor</button>
+
+    <input type="text" id="textid" placeholder="Enter your text">
+    <button id="updateText">Update Text</button>
+
+    <div id="contentBox">This is the defaukt text!</div>
+
+    <script>
+        const box=document.querySelector("#contentBox")
+        const bgButton = document.querySelector("#changeColor")
+        const upText=document.querySelector("#updateText")
+
+        bgButton.addEventListener("click" ()=>{
+            const color = document.querySelector("#color")
+            const testElement = document.querySelector("#textid")
+            textElement.style.color=color;
+
+            if(testElement.style.color=""){
+                alert("Invalid color name")
+            }
+            else{
+                box.style.backgroundColor=colorname;
+            }
+        }
+    );
+           upText.addEventListener("click", () => {
+            const newText = document.querySelector("#textid").value.trim();
+
+            if (newText === "") {
+                alert("Please enter some text!");
+            } else {
+                box.textContent = newText;
+            }
+        });
+
+
+    </script>
+</body>
+</html>
