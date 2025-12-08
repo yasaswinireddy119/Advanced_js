@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Book Management App (Firebase)</title>
+  <style>
+    :root {
+      --accent: #4f46e5;
+      --muted: #6b7280;
+      --card-bg: #ffffff;
+      --bg: #f3f4f6;
+    }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background: var(--bg);
+      color: #111827;
+    }
+    .app {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 20px;
+      height: 100vh;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+
+    /* Sidebar / Form */
+    .sidebar {
+      background: white;
+      padding: 16px;
+      border-radius: 8px;
+      box-shadow: 0 6px 18px rgba(15,23,42,0.06);
+      overflow-y: auto;
+    }
+    .sidebar h3 { margin: 0 0 10px 0; }
+    .field { margin-bottom: 12px; }
+    label { display:block; font-size:13px; margin-bottom:6px; color:var(--muted); }
+    input[type="text"], input[type="number"] {
+      width:100%;
+      padding:8px 10px;
+      border:1px solid #e5e7eb;
+      border-radius:6px;
+      box-sizing:border-box;
+    }
+    button.primary {
+      background: var(--accent);
+      color: white;
+      border:none;
+      padding:10px 12px;
+      border-radius:6px;
+      cursor:pointer;
+    }
+    button.ghost {
+      background:transparent;
+      border:1px solid #e5e7eb;
+      padding:8px 10px;
+      border-radius:6px;
+      cursor:pointer;
+    }
+
+    /* Main area */
+    .content {
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+    .header {
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+    }
+    .grid {
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      align-content:start;
+    }
+
+    /* Card */
+    .card {
+      background: var(--card-bg);
+      border-radius:8px;
+      padding: 12px;
+      box-shadow: 0 4px 12px rgba(17,24,39,0.04);
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      height:100%;
+    }
+    .cover {
+      width:100%;
+      height:160px;
+      border-radius:6px;
+      background-position:center;
+      background-size:cover;
+      background-color:#f3f4f6;
+    }
+    .title { font-weight:600; font-size:15px; margin:0; }
+    .author { color:var(--muted); font-size:13px; margin:0; }
+    .price { font-weight:700; color:var(--accent); margin-top:4px; }
+    .actions { margin-top:auto; display:flex; gap:8px; flex-wrap:wrap; }
+    .btn { padding:6px 8px; border-radius:6px; border:none; cursor:pointer; font-size:13px; }
+    .btn.small { padding:6px 8px; }
+    .btn.update { background:#fbbf24; color:#111827; }
+    .btn.delete { background:#ef4444; color:white; }
+    .btn.view { background:#10b981; color:white; }
+
+    /* Empty message */
+    .empty {
+      text-align:center;
+      color:var(--muted);
+      margin-top:40px;
+      font-size:18px;
+    }
+
+    /* Modal */
+    .modal-backdrop {
+      position:fixed;
+      inset:0;
+      background: rgba(0,0,0,0.4);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      z-index:50;
+    }
+    .modal {
+      background:white;
+      border-radius:8px;
+      padding:16px;
+      width:420px;
+      max-width:90%;
+      box-shadow:0 10px 30px rgba(2,6,23,0.2);
+    }
+
+    /* responsive */
+    @media (max-width: 900px) {
+      .app { grid-template-columns: 1fr; height:auto; }
+      .grid { grid-template-columns: repeat(2,1fr); }
+    }
+    @media (max-width: 560px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <h3> Add New Book </h3>
+
+      <div class="field">
+        <label for="title">Title</label>
+        <input id="title" type="text" placeholder="Book title" />
+      </div>
+
+      <div class="field">
+        <label for="author">Author</label>
+        <input id="author" type="text" placeholder="Author name" />
+      </div>
+
+      <div class="field">
+        <label for="price">Price (USD)</label>
+        <input id="price" type="number" placeholder="e.g. 9.99" />
+      </div>
+
+      <div class="field">
+        <label for="image">Cover Image URL</label>
+        <input id="image" type="text" placeholder="https://..." />
+      </div>
+
+      <div style="display:flex; gap:8px;">
+        <button class="primary" id="addBtn">Add Book</button>
+        <button class="ghost" id="clearBtn">Clear</button>
+      </div>
+
+      <hr style="margin:12px 0">
+
+      <p style="color:var(--muted); font-size:13px;">
+        Use the button below to insert sample books (only if your Firestore is empty).
+      </p>
+      <button class="ghost" id="seedBtn">Insert Sample Books</button>
+    </aside>
+
+    <!-- Main content -->
+    <main class="content">
+      <div class="header">
+        <h2>Books</h2>
+        <div>
+          <span id="countText" style="color:var(--muted)"></span>
+        </div>
+      </div>
+
+      <div id="mainArea">
+        <div id="grid" class="grid"></div>
+        <p id="empty" class="empty" style="display:none;">No Books Available</p>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal (hidden by default) -->
+  <div id="modalRoot" style="display:none"></div>
+
+  <!-- Firebase + App script -->
+  <script type="module">
+    /**
+     *  Book Management App (Firestore) - Beginner friendly
+     *  Steps:
+     *   1. Replace firebaseConfig below with your project's config
+     *   2. Enable Firestore in Firebase console
+     *   3. Open this file in the browser (served via localhost or file)
+     */
+
+    // -------------- IMPORT FIREBASE (v9 modular) ----------------
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+    import {
+      getFirestore, collection, addDoc, onSnapshot, doc,
+      updateDoc, deleteDoc, getDocs, query, limit
+    } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
+
+    // -------------- CONFIGURE FIREBASE ----------------
+    const firebaseConfig = {
+      // <-- REPLACE these with YOUR Firebase project's config values -->
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_AUTH_DOMAIN",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_STORAGE_BUCKET",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    // ---------- Initialize Firebase & Firestore ----------
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const booksCol = collection(db, "books"); // collection name: "books"
+
+    // ---------- DOM refs ----------
+    const grid = document.getElementById("grid");
+    const emptyMsg = document.getElementById("empty");
+    const countText = document.getElementById("countText");
+    const addBtn = document.getElementById("addBtn");
+    const clearBtn = document.getElementById("clearBtn");
+    const seedBtn = document.getElementById("seedBtn");
+    const titleEl = document.getElementById("title");
+    const authorEl = document.getElementById("author");
+    const priceEl = document.getElementById("price");
+    const imageEl = document.getElementById("image");
+    const modalRoot = document.getElementById("modalRoot");
+
+    // ---------- Helper: render a single book card ----------
+    function createCard(docSnap) {
+      const data = docSnap.data();
+      const id = docSnap.id;
+
+      const card = document.createElement("div");
+      card.className = "card";
+
+      // Cover
+      const cover = document.createElement("div");
+      cover.className = "cover";
+      cover.style.backgroundImage = data.coverImageURL ? `url('${data.coverImageURL}')` : `linear-gradient(135deg,#eef2ff,#f8fafc)`;
+      card.appendChild(cover);
+
+      // Title, author, price
+      const t = document.createElement("p");
+      t.className = "title";
+      t.textContent = data.title || "Untitled";
+      card.appendChild(t);
+
+      const a = document.createElement("p");
+      a.className = "author";
+      a.textContent = `Author: ${data.author || "Unknown"}`;
+      card.appendChild(a);
+
+      const p = document.createElement("p");
+      p.className = "price";
+      p.textContent = data.price ? `$${Number(data.price).toFixed(2)}` : "$0.00";
+      card.appendChild(p);
+
+      // Actions
+      const actions = document.createElement("div");
+      actions.className = "actions";
+
+      const updateBtn = document.createElement("button");
+      updateBtn.className = "btn update small";
+      updateBtn.textContent = "Update Author";
+      updateBtn.addEventListener("click", () => onUpdateAuthor(id, data.author));
+      actions.appendChild(updateBtn);
+
+      const deleteBtn = document.createElement("button");
+      deleteBtn.className = "btn delete small";
+      deleteBtn.textContent = "Delete";
+      deleteBtn.addEventListener("click", () => onDeleteBook(id));
+      actions.appendChild(deleteBtn);
+
+      const viewBtn = document.createElement("button");
+      viewBtn.className = "btn view small";
+      viewBtn.textContent = "View Details";
+      viewBtn.addEventListener("click", () => openModal(data));
+      actions.appendChild(viewBtn);
+
+      card.appendChild(actions);
+
+      return { card, id };
+    }
+
+    // ---------- Realtime listener: fetch & render books ----------
+    // This will auto-run whenever collection changes (add/update/delete)
+    function startRealtimeListener() {
+      // onSnapshot returns an unsubscribe function (not used here)
+      onSnapshot(booksCol, (snapshot) => {
+        grid.innerHTML = "";
+        if (snapshot.empty) {
+          emptyMsg.style.display = "block";
+          countText.textContent = "";
+        } else {
+          emptyMsg.style.display = "none";
+          countText.textContent = `${snapshot.size} book(s)`;
+        }
+
+        // Render each doc
+        snapshot.forEach(docSnap => {
+          const { card } = createCard(docSnap);
+          grid.appendChild(card);
+        });
+      }, (error) => {
+        console.error("Realtime listener error:", error);
+      });
+    }
+
+    // ---------- Add Book ----------
+    async function addBook(book) {
+      try {
+        await addDoc(booksCol, book);
+        // onSnapshot handles re-render automatically
+      } catch (err) {
+        console.error("Add book failed:", err);
+        alert("Failed to add book. See console.");
+      }
+    }
+
+    // ---------- Delete Book ----------
+    async function onDeleteBook(id) {
+      const ok = confirm("Delete this book? This action cannot be undone.");
+      if (!ok) return;
+      try {
+        await deleteDoc(doc(db, "books", id));
+        // onSnapshot will re-render
+      } catch (err) {
+        console.error("Delete failed:", err);
+        alert("Delete failed. See console.");
+      }
+    }
+
+    // ---------- Update Author ----------
+    async function onUpdateAuthor(id, currentAuthor = "") {
+      const newAuthor = prompt("Enter new author name:", currentAuthor || "");
+      if (newAuthor === null) return; // cancelled
+      const trimmed = newAuthor.trim();
+      if (trimmed.length === 0) {
+        alert("Author cannot be empty.");
+        return;
+      }
+      try {
+        const d = doc(db, "books", id);
+        await updateDoc(d, { author: trimmed });
+        // onSnapshot will re-render
+      } catch (err) {
+        console.error("Update failed:", err);
+        alert("Update failed. See console.");
+      }
+    }
+
+    // ---------- Modal for View Details ----------
+    function openModal(data) {
+      modalRoot.style.display = "block";
+      modalRoot.innerHTML = `
+        <div class="modal-backdrop" id="modalBack">
+          <div class="modal">
+            <h3 style="margin-top:0">${escapeHtml(data.title || "Untitled")}</h3>
+            <div style="display:flex; gap:10px;">
+              <div style="flex:0 0 120px;">
+                <div style="width:120px;height:160px;background-size:cover;background-position:center;border-radius:6px; background-image: url('${escapeHtml(data.coverImageURL || "")}')"></div>
+              </div>
+              <div style="flex:1;">
+                <p><strong>Author:</strong> ${escapeHtml(data.author || "Unknown")}</p>
+                <p><strong>Price:</strong> ${data.price ? `$${Number(data.price).toFixed(2)}` : "$0.00"}</p>
+                <p style="color:var(--muted)"><strong>Document data:</strong></p>
+                <pre style="background:#f8fafc;padding:8px;border-radius:6px;overflow:auto;font-size:12px;">${escapeHtml(JSON.stringify(data, null, 2))}</pre>
+              </div>
+            </div>
+            <div style="text-align:right; margin-top:12px;">
+              <button class="ghost" id="closeModal">Close</button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      document.getElementById("closeModal").addEventListener("click", closeModal);
+      document.getElementById("modalBack").addEventListener("click", (e) => {
+        if (e.target.id === "modalBack") closeModal();
+      });
+    }
+
+    function closeModal() {
+      modalRoot.style.display = "none";
+      modalRoot.innerHTML = "";
+    }
+
+    // ---------- Utility: escape HTML for safety in modal ----------
+    function escapeHtml(s) {
+      if (!s && s !== 0) return "";
+      return String(s)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    // ---------- Seed sample books (only add if collection empty) ----------
+    async function seedSampleBooks() {
+      try {
+        const q = query(booksCol,   limit(1));
+        const snapshot = await getDocs(q);
+        if (!snapshot.empty) {
+          if (!confirm("Books collection already has data. Add sample books anyway?")) return;
+        }
+
+        const samples = [
+          { title: "The Little Prince", author: "Antoine de Saint-Exupéry", price: 7.99, coverImageURL: "https://images-na.ssl-images-amazon.com/images/I/81aYg6qJZWL.jpg" },
+          { title: "Clean Code", author: "Robert C. Martin", price: 29.99, coverImageURL: "https://images-na.ssl-images-amazon.com/images/I/41xShlnTZTL._SX374_BO1,204,203,200_.jpg" },
+          { title: "Eloquent JavaScript", author: "Marijn Haverbeke", price: 19.99, coverImageURL: "https://eloquentjavascript.net/img/cover.jpg" },
+          { title: "Atomic Habits", author: "James Clear", price: 14.99, coverImageURL: "https://images-na.ssl-images-amazon.com/images/I/51-nXsSRfZL.jpg" },
+          { title: "The Pragmatic Programmer", author: "Andrew Hunt", price: 32.00, coverImageURL: "https://images-na.ssl-images-amazon.com/images/I/41as+WafrFL._SX377_BO1,204,203,200_.jpg" }
+        ];
+
+        for (const s of samples) {
+          await addDoc(booksCol, s);
+        }
+        alert("Sample books added.");
+      } catch (err) {
+        console.error("Seeding failed:", err);
+        alert("Seeding failed. See console.");
+      }
+    }
+
+    //  Event handlers
+    addBtn.addEventListener("click", () => {
+      const title = titleEl.value.trim();
+      const author = authorEl.value.trim();
+      const price = priceEl.value.trim();
+      const image = imageEl.value.trim();
+
+      if (!title || !author || !price) {
+        alert("Please fill Title, Author and Price.");
+        return;
+      }
+
+      addBook({
+        title,
+        author,
+        price: Number(price),
+        coverImageURL: image || ""
+      });
+
+      // clear inputs
+      titleEl.value = "";
+      authorEl.value = "";
+      priceEl.value = "";
+      imageEl.value = "";
+    });
+
+    clearBtn.addEventListener("click", () => {
+      titleEl.value = "";
+      authorEl.value = "";
+      priceEl.value = "";
+      imageEl.value = "";
+    });
+
+    seedBtn.addEventListener("click", seedSampleBooks);
+
+    
+    startRealtimeListener();
+
+    
+    console.log("Book Management App initialized. Firestore collection: 'books'");
+  </script>
+</body>
+</html>
