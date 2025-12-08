@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Simple Todo App</title>
+</head>
+<body>
+
+  <h2>Todo List</h2>
+  <div id="todos"></div>
+  <p id="msg"></p>
+
+  <script>
+    // Fetch first 20 todos and store in localStorage
+function fetchTodos() {
+  fetch("https://jsonplaceholder.typicode.com/todos")
+    .then(res => res.json())
+    .then(data => {
+      let first20 = data.slice(0, 20);
+      localStorage.setItem("todos", JSON.stringify(first20));
+      showTodos();
+    });
+}
+
+// Get todos from localStorage
+function getTodos() {
+  return JSON.parse(localStorage.getItem("todos")) || [];
+}
+
+// Display todos on UI
+function showTodos() {
+  let todos = getTodos();
+  let container = document.getElementById("todos");
+  let msg = document.getElementById("msg");
+
+  container.innerHTML = "";
+
+  if (todos.length === 0) {
+    msg.textContent = "No Todos Available";
+    return;
+  } else {
+    msg.textContent = "";
+  }
+
+  todos.forEach(todo => {
+    let div = document.createElement("div");
+    div.innerHTML = `
+      <p>${todo.title} - ${todo.completed ? "✔ Completed" : "❌ Pending"}</p>
+      <button onclick="deleteTodo(${todo.id})">Delete</button>
+      <button onclick="toggleStatus(${todo.id})">Toggle</button>
+      <hr>
+    `;
+    container.appendChild(div);
+  });
+}
+
+
+function deleteTodo(id) {
+  let todos = getTodos().filter(todo => todo.id !== id);
+  localStorage.setItem("todos", JSON.stringify(todos));
+  showTodos();
+}
+
+function toggleStatus(id) {
+  let todos = getTodos().map(todo => {
+    if (todo.id === id) todo.completed = !todo.completed;
+    return todo;
+  });
+  localStorage.setItem("todos", JSON.stringify(todos));
+  showTodos();
+}
+
+
+if (!localStorage.getItem("todos")) {
+  fetchTodos();
+} else {
+  showTodos();
+}
+
+  </script>
+</body>
+</html>
